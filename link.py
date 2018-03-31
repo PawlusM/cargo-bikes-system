@@ -7,5 +7,3 @@ class Link:
         self.in_node = in_node
         # link length [km]
         self.weight = weight
-        self.capacity = 0
-        self.load = 0

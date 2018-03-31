@@ -13,3 +13,5 @@ class Node:
         # graph features
         self.out_links = []
         self.in_links = []
+        # demand parameters
+        

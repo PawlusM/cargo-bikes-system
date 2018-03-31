@@ -1,12 +1,14 @@
 import random
 import numpy as np
+
 import stochastic
 import link
 import node
+import consignment
 
 
 class Net:
-    """ Net as the graph model """
+    """ Delivery network as the graph model """
 
     def __init__(self):
         # network model time
@@ -94,7 +96,26 @@ class Net:
         # sort the nodes (is useful for calculating the short distances matrix)
         # self.nodes.sort()
 
-    def generate(self, nodes_num, links_num, s_weight):
+    @property
+    def to_matrix(self):
+        max_code = max([n.code for n in self.nodes])
+        mtx = [[float('inf') for __ in range(max_code + 1)]
+               for _ in range(max_code + 1)]
+        for lnk in self.links:
+            mtx[lnk.out_node.code][lnk.in_node.code] = lnk.weight
+        return np.array(mtx)
+
+    @property
+    def floyd_warshall(self):
+        g = self.to_matrix
+        for nk in self.nodes:
+            for ni in self.nodes:
+                for nj in self.nodes:
+                    if g[ni.code][nj.code] > g[ni.code][nk.code] + g[nk.code][nj.code]:
+                        g[ni.code][nj.code] = g[ni.code][nk.code] + g[nk.code][nj.code]
+        return g
+
+    def generate(self, nodes_num, links_num, s_weight=stochastic.Stochastic()):
         """
             nodes_num - number of nodes in the net
             links_num - number of links in the net
@@ -113,7 +134,7 @@ class Net:
         for i in range(1, nodes_num + 1):
             self.nodes.append(node.Node(i))
         # generate random set of the network links
-        # ! some nodes in the network could not be linked
+        # ! some nodes in the network could be not linked (not achievable)
         l_num = 0  # counter for the links number
         while l_num < links_num:
             out_node = random.choice(self.nodes)
@@ -121,8 +142,21 @@ class Net:
             while out_node is in_node:
                 in_node = random.choice(self.nodes)
             if not self.contains_link(out_node, in_node):
-                self.add_link(out_node.code, in_node.code, s_weight.get_value(), True)
+                self.add_link(out_node.code, in_node.code, s_weight.value(), True)
                 l_num += 1
+
+    def generate_demand(self, s_weight=stochastic.Stochastic(), s_int=stochastic.Stochastic()):
+        t = 0
+        while t < self.duration:
+            t += s_int.value()
+            cst = consignment.Consignment()
+            cst.m_appear = t
+            cst.weight = s_weight.value()
+            cst.origin = random.choice(self.nodes)
+            cst.destination = random.choice(self.nodes)
+            while cst.origin is cst.destination:
+                cst.destination = random.choice(self.nodes)
+            self.demand.append(cst)
 
     def dijkstra(self, source):
         # 1 function Dijkstra(Graph, source):
@@ -192,13 +226,13 @@ class Net:
         for origin in self.nodes:
             for destination in self.nodes:
                 od[(origin.code, destination.code)] = 0
-        # for psg in self.demand:
-        #     od[(psg.origin_node.code, psg.destination_nodes[-1].code)] += 1
+        for cst in self.demand:
+            od[(cst.origin.code, cst.destination.code)] += 1
         return od
 
     def print_od_matrix(self):
         od = self.od_matrix
-        print "OD\t",
+        print "O/D\t",
         for nd in self.nodes:
             print "{0}\t".format(nd.code),
         print
@@ -219,4 +253,5 @@ class Net:
         """" Print out network parameters """
         print "Links list:"
         for lnk in self.links:
-            print "{0} - {1}: {2}".format(lnk.out_node.code, lnk.in_node.code, round(lnk.weight, 2))
+            print "{0} - {1}: {2}".format(lnk.out_node.code, lnk.in_node.code,\
+                                          round(lnk.weight, 2))

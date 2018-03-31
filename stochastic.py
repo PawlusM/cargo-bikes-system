@@ -15,7 +15,7 @@ class Stochastic:
         # form parameter
         self.shape = shape
 
-    def get_value(self):
+    def value(self):
         """" Returns the generated value """
         if self.law == 0:
             # rectangular distribution
