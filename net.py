@@ -23,12 +23,23 @@ class Net:
         # transport demand
         self.demand = []
 
-    def contains_node(self, node_code):
+
+    def __str__(self):
+        ans = "The network configuration:\n"
+        for lnk in self.links:
+            ans += "{0}\t-\t{1}:\t{2}\n".format(lnk.out_node.code,\
+                                                lnk.in_node.code,\
+                                                round(lnk.weight, 2))
+        return ans
+
+
+    def contains_node(self, code):
         """" Determines if the network contains a node with the specified code """
         for n in self.nodes:
-            if n.code == node_code:
+            if n.code == code:
                 return True
         return False
+
 
     def get_node(self, code):
         """" Returns the first found node with the specified code """
@@ -37,12 +48,14 @@ class Net:
                 return n
         return None
 
+
     def contains_link(self, out_node, in_node):
         """ Checks if the net contains a link """
-        for l in self.links:
-            if l.out_node is out_node and l.in_node is in_node:
+        for lnk in self.links:
+            if lnk.out_node is out_node and lnk.in_node is in_node:
                 return True
         return False
+
 
     def get_link(self, out_node, in_node):
         """" Returns the first found link with the specified out and in nodes """
@@ -50,6 +63,7 @@ class Net:
             if lnk.out_node is out_node and lnk.in_node is in_node:
                 return lnk
         return None
+
 
     def add_link(self, out_code, in_code, weight=0, directed=False):
         """" Adds a link with the specified characteristics """
@@ -95,16 +109,18 @@ class Net:
         # add the reverse link
         if not directed:
             self.add_link(in_code, out_code, weight, True)
-        # sort the nodes (is useful for calculating the short distances matrix)
-        self.nodes.sort()
+
 
     @property
     def to_matrix(self):
-        mtx = [[np.inf for __ in range(len(self.nodes))]
-               for _ in range(len(self.nodes))]
+        self.nodes.sort(key=lambda nd: nd.code) # sort the nodes!
+        mtx = np.array([[np.inf for _ in self.nodes] for __ in self.nodes])
+        for nd in self.nodes:
+            mtx[nd.code][nd.code] = 0
         for lnk in self.links:
             mtx[lnk.out_node.code][lnk.in_node.code] = lnk.weight
-        return np.array(mtx)
+        return mtx
+
 
     @property
     def floyd_warshall(self):
@@ -115,6 +131,7 @@ class Net:
                     if g[ni.code][nj.code] > g[ni.code][nk.code] + g[nk.code][nj.code]:
                         g[ni.code][nj.code] = g[ni.code][nk.code] + g[nk.code][nj.code]
         return g
+
 
     def generate(self, nodes_num, links_num, s_weight=stochastic.Stochastic()):
         """
@@ -146,6 +163,7 @@ class Net:
                 self.add_link(out_node.code, in_node.code, s_weight.value(), True)
                 l_num += 1
 
+
     def generate_demand(self, s_weight=stochastic.Stochastic(),
                         s_int=stochastic.Stochastic()):
         t = 0
@@ -159,6 +177,8 @@ class Net:
             while cst.origin is cst.destination:
                 cst.destination = random.choice(self.nodes)
             self.demand.append(cst)
+        print "Demand generation completed: {} requests generated.".format(len(self.demand))
+
 
     def dijkstra(self, source):
         # 1 function Dijkstra(Graph, source):
@@ -206,6 +226,7 @@ class Net:
                     previous[v.code] = u
         return previous
 
+
     def define_path(self, source, target):
         # 1 S:= empty sequence
         # 2 u:= target
@@ -222,14 +243,29 @@ class Net:
         path.reverse()
         return path
 
-    def clarke_wright(self, sender_code=0, vehicle=vehicle.Vehicle()):
+
+    def clarke_wright(self, sender_code=0, requests=[], capacity=10):
         routes = [] # the calculated routes
-        n = len(self.nodes)
-        d = self.floyd_warshall # shortest distances matrix
-        s = np.array([[0.0 for _ in range(n)] for __ in range(n)]) # wins matrix
-        # print d
-        # print s
+        n = len(self.nodes) # number of nodes in the net
+
+        # choose only consignments with sender as origin
         sender = self.get_node(sender_code) # sernder's node
+        from_sender = []
+        for cst in requests:
+            if cst.origin is sender:
+                from_sender.append(cst)
+        # combine multiple consignments for the same destination
+        combined_weights = [0 for _ in range(n)]
+        for cst in from_sender:
+            combined_weights[cst.destination.code] += cst.weight
+        combined = []
+        for i in range(n):
+            if combined_weights[i] > 0:
+                combined.append(consignment.Consignment(combined_weights[i],
+                                                        sender,
+                                                        self.get_node(i)))
+        # get SDM for the net
+        d = self.floyd_warshall
 
         print "Clarke-Wright algorithm started..."
 
@@ -259,36 +295,19 @@ class Net:
             rt = route_of(nd)
             return rt is not None and (is_in_head(nd, rt) or is_in_tail(nd, rt))
 
-        # choose only consignments with sender as origin
-        from_sender = []
-        for cst in self.demand:
-            if cst.origin is sender:
-                from_sender.append(cst)
-        # combine multiple consignments for the same destination
-        combined_weights = [0 for _ in range(n)]
-        for cst in from_sender:
-            combined_weights[cst.destination.code] += cst.weight
-        combined = []
-        for i in range(n):
-            if combined_weights[i] > 0:
-                combined.append(consignment.Consignment(combined_weights[i],
-                                                        sender,
-                                                        self.get_node(i)))
-
         # forming the set of simple routes (pendular with empty returns)
         for cst in combined:
             rt = route.Route(self, [cst])
-            # print rt
             routes.append(rt)
 
         # calculating the wins matrix
+        s = np.array([[0.0 for _ in range(n)] for __ in range(n)]) # wins matrix
         for i in range(n):
             for j in range(n):
                 if j <= i - 1:
                     s[i][j] = d[sender_code][i] + d[sender_code][j] - d[i][j]
                 else:
                     s[i][j] = -np.inf
-        # print s
 
         while True:
             max_s = -np.inf
@@ -303,13 +322,12 @@ class Net:
             s[i_max][j_max] = -np.inf
             r1 = route_of(self.nodes[i_max])
             r2 = route_of(self.nodes[j_max])
-            # print self.nodes[i_max].code, self.nodes[j_max].code
-            # print r1, r2
 
             # conditions to be fulfilled for segments merging
             if not are_in_same_route(self.nodes[i_max], self.nodes[j_max]) and \
-                is_head_or_tail(self.nodes[i_max]) and is_head_or_tail(self.nodes[j_max]) and \
-                r1.weight + r2.weight <= vehicle.capacity:
+                is_head_or_tail(self.nodes[i_max]) and \
+                is_head_or_tail(self.nodes[j_max]) and \
+                r1.weight + r2.weight <= capacity:
                 # checking the side before merging
                 if r1.size > 1:
                     if is_in_tail(self.nodes[i_max], r1):
@@ -330,14 +348,16 @@ class Net:
                         r1.merge(r2)
                         routes.remove(r2)
 
-            # print max_s
+            # checking if the optimization procedure is complete
             if max_s == -np.inf:
                 break
 
         # printing the routes to console
+        print "{} routes were formed.".format(len(routes))
         for rt in routes:
             print rt
         return routes
+
 
     @property
     def od_matrix(self):
@@ -349,7 +369,8 @@ class Net:
             od[(cst.origin.code, cst.destination.code)] += 1
         return od
 
-    def print_od_matrix(self):
+
+    def print_odm(self):
         od = self.od_matrix
         print "O/D\t",
         for nd in self.nodes:
@@ -361,16 +382,23 @@ class Net:
                 print "{0}\t".format(od[(origin.code, destination.code)]),
             print
 
+
+    def print_sdm(self):
+        sdm = self.floyd_warshall
+        print "SDM\t",
+        for nd in self.nodes:
+            print nd.code, "\t",
+        print
+        for i in range(len(self.nodes)):
+            print self.nodes[i].code, "\t",
+            for j in range(len(self.nodes)):
+                print round(sdm[i][j], 3), "\t",
+            print
+
+
     def load_from_file(self, file_name):
         f = open(file_name, 'r')
         for data_line in f:
             data = data_line.split(' ')
             self.add_link(int(data[0]), int(data[1]), float(data[2]))
         f.close()
-
-    def print_characteristics(self):
-        """" Print out network parameters """
-        print "Links list:"
-        for lnk in self.links:
-            print "{0} - {1}: {2}".format(lnk.out_node.code, lnk.in_node.code,\
-                                          round(lnk.weight, 2))

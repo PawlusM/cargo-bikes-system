@@ -14,7 +14,10 @@ class Route:
             for n in self.nodes[:-1]:
                 ans += str(n.code) + "--"
             ans += str(self.nodes[-1].code)
-        ans += "}(" + str(self.size) + "): " + str(self.weight)
+        ans += "}" + "({}): {} km, {} tons, {} tkm".format(self.size,
+                                                     round(self.distance, 3),\
+                                                     round(self.weight, 3),\
+                                                     round(self.transport_work, 3))
         return ans
 
     @property
@@ -40,13 +43,30 @@ class Route:
         else:
             d = 0
             sdm = self.net.floyd_warshall
-            for i in range(self.size - 1):
-                 d += sdm[self.nodes[i].code][self.nodes[i + 1].code]
+            for i in range(1, len(self.nodes)):
+                 d += sdm[self.nodes[i - 1].code][self.nodes[i].code]
             return d
+
+    @property
+    def transport_work(self):
+        if self.size == 0 or self.net is None:
+            return None
+        else:
+            w = 0
+            sdm = self.net.floyd_warshall
+            vol = self.weight
+            for i in range(1, len(self.nodes) - 1):
+                 w += sdm[self.nodes[i - 1].code][self.nodes[i].code] * vol
+                 vol -= self.consignments[i - 1].weight
+            return w
 
     @property
     def weight(self):
         return sum([c.weight for c in self.consignments])
+
+    @property
+    def weights(self):
+        return [c.weight for c in self.consignments]
 
     def merge(self, other):
         if (other is not None) and (self.net is other.net):
