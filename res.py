@@ -5,8 +5,13 @@ tw_diag, tw_mid = [], []
 fd = open("tw_diag.txt", "r")
 for d in fd:
     tw_diag.append(float(d))
-print tw_diag
-print len(tw_diag)
-print sum(tw_diag)/len(tw_diag)
-plt.hist(tw_diag)
-plt.show()
+fd.close()
+fm = open("tw_mid.txt", "r")
+for d in fm:
+    tw_mid.append(float(d))
+fm.close()
+# print tw_diag
+# print len(tw_diag)
+print sum(tw_diag)/len(tw_diag), sum(tw_mid)/len(tw_mid)
+# plt.hist(tw_diag)
+# plt.show()
