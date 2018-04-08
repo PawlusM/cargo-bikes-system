@@ -15,9 +15,7 @@ class Route:
                 ans += str(n.code) + "--"
             ans += str(self.nodes[-1].code)
         ans += "}" + "({}): {} km, {} tons, {} tkm".format(self.size,
-                                                     round(self.distance, 3),\
-                                                     round(self.weight, 3),\
-                                                     round(self.transport_work, 3))
+               round(self.distance, 3), round(self.weight, 3), round(self.transport_work, 3))
         return ans
 
     @property

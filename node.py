@@ -14,4 +14,5 @@ class Node:
         self.out_links = []
         self.in_links = []
         # demand parameters
-        
+        self.s_weight = None
+        self.req_prob = 1

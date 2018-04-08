@@ -133,6 +133,32 @@ class Net:
         return g
 
 
+    def gen_rect(self, size=2, s_weight=stochastic.Stochastic()):
+        # reset the current configuration
+        self.nodes, self.links = [], []
+        # generate nodes
+        for i in range(size * size + 4 * (size - 1)):
+            # 1..size**2 are inner nodes,
+            # (size**2 + 1)..(size**2 + 4 * (size - 1)) are edge nodes
+            self.nodes.append(node.Node(i))
+        # generate links between inner nodes
+        for i in range(size):
+            for j in range(1, size):
+                self.add_link(size * i + j - 1, size * i + j, s_weight.value())
+                self.add_link(size * (j - 1) + i, size * j + i, s_weight.value())
+        # generate links for edge nodes
+        for i in range(size):
+            # top edge
+            self.add_link(i, size * size + i, s_weight.value())
+            # bottom edge
+            self.add_link(size * (size - 1) + i, size * (size + 1) + i, s_weight.value())
+        for i in range(size - 2):
+            # left edge
+            self.add_link((i + 1) * size, size * (size + 2) + i, s_weight.value())
+            # right edge
+            self.add_link((i + 2) * size - 1, size * (size + 3) - 2 + i, s_weight.value())
+
+
     def generate(self, nodes_num, links_num, s_weight=stochastic.Stochastic()):
         """
             nodes_num - number of nodes in the net
@@ -148,6 +174,8 @@ class Net:
         # limit upper bound for the number of links
         if links_num > nodes_num * (nodes_num - 1):
             links_num = nodes_num * (nodes_num - 1)
+        # reset the current configuration
+        self.nodes, self.links = [], []
         # define a set of the network nodes
         for i in range(nodes_num):
             self.nodes.append(node.Node(i))
@@ -164,9 +192,20 @@ class Net:
                 l_num += 1
 
 
-    def generate_demand(self, s_weight=stochastic.Stochastic(),
-                        s_int=stochastic.Stochastic()):
+    def gen_requests(self, sender=None, nodes=[], prob=1, s_weight=stochastic.Stochastic()):
+        self.demand = []
+        for nd in nodes:
+            if random.random() < prob:
+                cst = consignment.Consignment()
+                cst.origin, cst.destination = sender, nd
+                cst.weight = s_weight.value()
+                self.demand.append(cst)
+        print "Demand generation completed: {} requests generated.".format(len(self.demand))
+
+
+    def gen_req_flow(self, s_weight=stochastic.Stochastic(), s_int=stochastic.Stochastic()):
         t = 0
+        self.demand = []
         while t < self.duration:
             t += s_int.value()
             cst = consignment.Consignment()
