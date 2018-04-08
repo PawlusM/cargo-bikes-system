@@ -14,7 +14,7 @@ for _ in range(300):
     n.gen_rect(size=size, s_weight=s_dist)
     clients = []
     for nd in n.nodes:
-        if nd.code < sender_code:
+        if nd.code < size**2:
             clients.append(nd)
     n.gen_requests(sender=n.get_node(sender_code), nodes=clients, prob=1.0, s_weight=s_weight)
     rts = n.clarke_wright(sender_code=sender_code, requests=n.demand, capacity=0.15)
