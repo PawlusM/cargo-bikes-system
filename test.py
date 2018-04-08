@@ -1,15 +1,13 @@
 import net
 import route
 import stochastic
-import matplotlib.pyplot as plt
-
 
 size = 7
 sender_code = size**2
 s_weight = stochastic.Stochastic(law=1, location=0.03, scale=0.005)
 s_dist = stochastic.Stochastic(law=0, location=0.05, scale=0.15)
 
-f = open("tw_diag.txt")
+f = open("tw_diag.txt", "w")
 total_TW = []
 for _ in range(100):
     n = net.Net()
@@ -25,5 +23,3 @@ for _ in range(100):
     f.write(str(tw) + "\n")
 
 f.close()
-plt.hist(total_TW)
-plt.show()
