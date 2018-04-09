@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 
 
 tw_diag, tw_mid = [], []
-fd = open("tw_diag.txt", "r")
+fd = open("tw_diag_300.txt", "r")
 for d in fd:
     tw_diag.append(float(d))
 fd.close()
-fm = open("tw_mid.txt", "r")
+fm = open("tw_mid_300.txt", "r")
 for d in fm:
     tw_mid.append(float(d))
 fm.close()
