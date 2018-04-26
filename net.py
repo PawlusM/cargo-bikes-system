@@ -23,7 +23,6 @@ class Net:
         # transport demand
         self.demand = []
 
-
     def __str__(self):
         ans = "The network configuration:\n"
         for lnk in self.links:
@@ -32,14 +31,12 @@ class Net:
                                                 round(lnk.weight, 2))
         return ans
 
-
     def contains_node(self, code):
         """" Determines if the network contains a node with the specified code """
         for n in self.nodes:
             if n.code == code:
                 return True
         return False
-
 
     def get_node(self, code):
         """" Returns the first found node with the specified code """
@@ -48,7 +45,6 @@ class Net:
                 return n
         return None
 
-
     def contains_link(self, out_node, in_node):
         """ Checks if the net contains a link """
         for lnk in self.links:
@@ -56,14 +52,12 @@ class Net:
                 return True
         return False
 
-
     def get_link(self, out_node, in_node):
         """" Returns the first found link with the specified out and in nodes """
         for lnk in self.links:
             if lnk.out_node is out_node and lnk.in_node is in_node:
                 return lnk
         return None
-
 
     def add_link(self, out_code, in_code, weight=0, directed=False):
         """" Adds a link with the specified characteristics """
@@ -110,7 +104,6 @@ class Net:
         if not directed:
             self.add_link(in_code, out_code, weight, True)
 
-
     @property
     def to_matrix(self):
         self.nodes.sort(key=lambda nd: nd.code) # sort the nodes!
@@ -121,7 +114,6 @@ class Net:
             mtx[lnk.out_node.code][lnk.in_node.code] = lnk.weight
         return mtx
 
-
     @property
     def floyd_warshall(self):
         g = self.to_matrix
@@ -131,7 +123,6 @@ class Net:
                     if g[ni.code][nj.code] > g[ni.code][nk.code] + g[nk.code][nj.code]:
                         g[ni.code][nj.code] = g[ni.code][nk.code] + g[nk.code][nj.code]
         return g
-
 
     def gen_rect(self, size=2, s_weight=stochastic.Stochastic()):
         # reset the current configuration
@@ -157,7 +148,6 @@ class Net:
             self.add_link((i + 1) * size, size * (size + 2) + i, s_weight.value())
             # right edge
             self.add_link((i + 2) * size - 1, size * (size + 3) - 2 + i, s_weight.value())
-
 
     def generate(self, nodes_num, links_num, s_weight=stochastic.Stochastic()):
         """
@@ -191,7 +181,6 @@ class Net:
                 self.add_link(out_node.code, in_node.code, s_weight.value(), True)
                 l_num += 1
 
-
     def gen_requests(self, sender=None, nodes=[], prob=1, s_weight=stochastic.Stochastic()):
         self.demand = []
         for nd in nodes:
@@ -201,7 +190,6 @@ class Net:
                 cst.weight = s_weight.value()
                 self.demand.append(cst)
         print "Demand generation completed: {} requests generated.".format(len(self.demand))
-
 
     def gen_req_flow(self, s_weight=stochastic.Stochastic(), s_int=stochastic.Stochastic()):
         t = 0
@@ -217,7 +205,6 @@ class Net:
                 cst.destination = random.choice(self.nodes)
             self.demand.append(cst)
         print "Demand generation completed: {} requests generated.".format(len(self.demand))
-
 
     def dijkstra(self, source):
         # 1 function Dijkstra(Graph, source):
@@ -265,7 +252,6 @@ class Net:
                     previous[v.code] = u
         return previous
 
-
     def define_path(self, source, target):
         # 1 S:= empty sequence
         # 2 u:= target
@@ -281,7 +267,6 @@ class Net:
             u = previous[u.code]
         path.reverse()
         return path
-
 
     def clarke_wright(self, sender_code=0, requests=[], capacity=10):
         routes = [] # the calculated routes
@@ -338,7 +323,6 @@ class Net:
         for cst in combined:
             rt = route.Route(self, [cst])
             routes.append(rt)
-
         # calculating the wins matrix
         s = np.array([[0.0 for _ in range(n)] for __ in range(n)]) # wins matrix
         for i in range(n):
@@ -347,21 +331,17 @@ class Net:
                     s[i][j] = d[sender_code][i] + d[sender_code][j] - d[i][j]
                 else:
                     s[i][j] = -np.inf
-
         while True:
             max_s = -np.inf
             i_max, j_max = sender_code, sender_code
-
             for i in range(n):
                 for j in range(n):
                     if s[i][j] > max_s:
                         max_s = s[i][j]
                         i_max, j_max = i, j
-
             s[i_max][j_max] = -np.inf
             r1 = route_of(self.nodes[i_max])
             r2 = route_of(self.nodes[j_max])
-
             # conditions to be fulfilled for segments merging
             if not are_in_same_route(self.nodes[i_max], self.nodes[j_max]) and \
                 is_head_or_tail(self.nodes[i_max]) and \
@@ -386,17 +366,14 @@ class Net:
                     else:
                         r1.merge(r2)
                         routes.remove(r2)
-
             # checking if the optimization procedure is complete
             if max_s == -np.inf:
                 break
-
         # printing the routes to console
         print "{} routes were formed.".format(len(routes))
         for rt in routes:
             print rt
         return routes
-
 
     @property
     def od_matrix(self):
@@ -407,7 +384,6 @@ class Net:
         for cst in self.demand:
             od[(cst.origin.code, cst.destination.code)] += 1
         return od
-
 
     def print_odm(self):
         od = self.od_matrix
@@ -421,7 +397,6 @@ class Net:
                 print "{0}\t".format(od[(origin.code, destination.code)]),
             print
 
-
     def print_sdm(self):
         sdm = self.floyd_warshall
         print "SDM\t",
@@ -433,7 +408,6 @@ class Net:
             for j in range(len(self.nodes)):
                 print round(sdm[i][j], 3), "\t",
             print
-
 
     def load_from_file(self, file_name):
         f = open(file_name, 'r')

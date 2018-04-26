@@ -12,6 +12,6 @@ for d in fm:
 fm.close()
 # print tw_diag
 # print len(tw_diag)
-print sum(tw_diag)/len(tw_diag), sum(tw_mid)/len(tw_mid)
+print(sum(tw_diag)/len(tw_diag), sum(tw_mid)/len(tw_mid))
 plt.hist(tw_mid)
 plt.show()

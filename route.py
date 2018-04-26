@@ -19,6 +19,10 @@ class Route:
         return ans
 
     @property
+    def size(self):
+        return len(self.consignments)
+
+    @property
     def sender(self):
         if self.size == 0 or self.net is None:
             return None
@@ -29,10 +33,6 @@ class Route:
     @property
     def nodes(self):
         return [self.sender] + [c.destination for c in self.consignments] + [self.sender]
-
-    @property
-    def size(self):
-        return len(self.consignments)
 
     @property
     def distance(self):
