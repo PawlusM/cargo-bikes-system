@@ -22,6 +22,9 @@ class Net:
         self.links = []
         # transport demand
         self.demand = []
+        # servicing facilities
+        self.fleet = []
+        self.load_points = []
 
     def __str__(self):
         ans = "The network configuration:\n"
