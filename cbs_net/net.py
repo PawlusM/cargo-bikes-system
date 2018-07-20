@@ -412,9 +412,10 @@ class Net:
                 print round(sdm[i][j], 3), "\t",
             print
 
-    def load_from_file(self, file_name):
+    def load_from_file(self, file_name, dlm='\t'):
         f = open(file_name, 'r')
         for data_line in f:
-            data = data_line.split(' ')
+            data = data_line.split(dlm)
+            print int(data[0]), int(data[1]), float(data[2])
             self.add_link(int(data[0]), int(data[1]), float(data[2]))
         f.close()
