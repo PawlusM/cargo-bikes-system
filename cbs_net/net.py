@@ -334,6 +334,7 @@ class Net:
                     s[i][j] = d[sender_code][i] + d[sender_code][j] - d[i][j]
                 else:
                     s[i][j] = -np.inf
+
         while True:
             max_s = -np.inf
             i_max, j_max = sender_code, sender_code
@@ -416,6 +417,6 @@ class Net:
         f = open(file_name, 'r')
         for data_line in f:
             data = data_line.split(dlm)
-            print int(data[0]), int(data[1]), float(data[2])
+            # print int(data[0]), int(data[1]), float(data[2])
             self.add_link(int(data[0]), int(data[1]), float(data[2]))
         f.close()

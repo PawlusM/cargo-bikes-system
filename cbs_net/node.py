@@ -16,3 +16,6 @@ class Node:
         # demand parameters
         self.s_weight = None
         self.req_prob = 1
+        # location (coordinates)
+        self.x = 0
+        self.y = 0
