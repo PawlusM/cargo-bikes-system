@@ -19,3 +19,5 @@ class Node:
         # location (coordinates)
         self.x = 0
         self.y = 0
+        # type
+        self.type = 'notype'

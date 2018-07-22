@@ -3,14 +3,14 @@ from cbs_net import Net
 from cbs_net import Stochastic
 from cbs_net import Route
 
-sender_code = 0
+sender_code = 1
 s_weight = Stochastic(law=1, location=0.03, scale=0.005)
 # s_dist = Stochastic(law=0, location=0.05, scale=0.15)
 
 
 n = Net()
 # n.gen_rect(size=size, s_weight=s_dist)
-n.load_from_file('rynek.txt')
+n.load_from_file('rynek_links.txt')
 
 clients = []
 for nd in n.nodes:
