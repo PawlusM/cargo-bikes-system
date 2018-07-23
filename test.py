@@ -4,7 +4,7 @@ from cbs_net import Stochastic
 from cbs_net import Route
 import time
 
-sender_code = 731
+sender_code = 735
 s_weight = Stochastic(law=1, location=0.03, scale=0.005)
 # s_dist = Stochastic(law=0, location=0.05, scale=0.15)
 
@@ -26,7 +26,7 @@ for nd in n.nodes:
     if nd.code < 730:
         clients.append(nd)
 
-f = open("tw_B_300_01.txt", "w")
+f = open("tw_F_300_01.txt", "w")
 for _ in range(300):
     start_time = time.time()
     n.gen_requests(sender=n.get_node(sender_code), nodes=clients, prob=0.1, s_weight=s_weight)
