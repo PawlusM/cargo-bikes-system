@@ -31,6 +31,8 @@ for data_line in f:
         nd.type = 'shop'
     elif str(data[2]) == 'Ks':
         nd.type = 'bookstore'
+    elif str(data[2]) == 'L':
+        nd.type = 'loadpoint'
     if nd.x < min_x: min_x = nd.x
     if nd.y < min_y: min_y = nd.y
     if nd.x > max_x: max_x = nd.x
@@ -53,10 +55,11 @@ for lnk in n.links:
 pos = nx.get_node_attributes(G, 'pos')
 color_map = {'restaurant': 'darkblue',
              'cafe': 'blue',
-             'bar': 'brown',
+             'bar': 'purple',
              'hotel': 'red',
              'shop': 'grey',
-             'bookstore': 'green'
+             'bookstore': 'green',
+             'loadpoint': 'orange'
              # 'notype': 'white'
             }
 colors = [color_map.get(nd.type) for nd in n.nodes]
@@ -75,6 +78,6 @@ nx.draw_networkx_nodes(G, pos=pos, alpha=0.5, node_color=colors, ax=ax)
 nx.draw_networkx_edges(G, pos=pos, style='dotted')
 
 plt.axis('off')
-plt.legend(loc='best')
+plt.legend(loc='lower right')
 fig.tight_layout()
 plt.show()

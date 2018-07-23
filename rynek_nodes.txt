@@ -728,3 +728,9 @@
 727	Bona Książka i Kawa	R	50.056688	19.937430
 728	Nestor. Księgarnia	Ks	50.056458	19.937423
 729	Kurka Wodna Restauracja Polska	R	50.056422	19.937403
+730	Plac Szczepański 4	L	50.064231	19.935140
+731	Plac Św. Ducha	L	50.063645	19.942277
+732	Sienna 17	L	50.060262	19.941684
+733	Gołębia	L	50.061151	19.932600
+734	Parking Pod Wawelem	L	50.055391	19.937715
+735	Plac Wszystkich Świętych	L	50.058972	19.936962

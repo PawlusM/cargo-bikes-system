@@ -8,7 +8,7 @@ class Route:
         self.net = net # net on which the route is defined
         self.sdm = np.array([[]]) # shortest distances matrix
         if net is not None:
-            self.sdm = self.net.floyd_warshall
+            self.sdm = self.net.sdm
 
 
     def __str__(self):

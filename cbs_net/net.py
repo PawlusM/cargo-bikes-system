@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import time
 
 from stochastic import Stochastic
 from link import Link
@@ -25,6 +26,8 @@ class Net:
         # servicing facilities
         self.fleet = []
         self.load_points = []
+        # shortest distances od_matrix
+        self.sdm = np.array([[]])
 
     def __str__(self):
         ans = "The network configuration:\n"
@@ -271,7 +274,7 @@ class Net:
         path.reverse()
         return path
 
-    def clarke_wright(self, sender_code=0, requests=[], capacity=10):
+    def clarke_wright(self, sender_code=0, requests=[], capacity=10, verbose=True):
         routes = [] # the calculated routes
         n = len(self.nodes) # number of nodes in the net
 
@@ -282,19 +285,35 @@ class Net:
             if cst.origin is sender:
                 from_sender.append(cst)
         # combine multiple consignments for the same destination
+        if verbose: print "Combining multiple consignments..."
         combined_weights = [0 for _ in range(n)]
         for cst in from_sender:
             combined_weights[cst.destination.code] += cst.weight
-        combined = []
+        combined = [] # set of consignments combined by consignees
+        consignee_codes = []
         for i in range(n):
             if combined_weights[i] > 0:
                 combined.append(Consignment(combined_weights[i],
-                                            sender,
-                                            self.get_node(i)))
-        # get SDM for the net
-        d = self.floyd_warshall
+                                            sender, self.get_node(i)))
+                consignee_codes.append(i)
+        if verbose: print sender_code, consignee_codes
+        # number of consignees
+        m = len(consignee_codes)
 
-        print "Clarke-Wright algorithm started..."
+        # get SDM for the routing problem
+        d = np.array([[np.inf for _ in range(m + 1)]
+                      for __ in range(m + 1)])
+        d[0][0] = self.sdm[sender_code][sender_code]
+        for i in range(1, m + 1):
+            d[0][i] = self.sdm[sender_code][consignee_codes[i - 1]]
+            d[i][0] = self.sdm[consignee_codes[i - 1]][sender_code]
+            for j in range(1, m + 1):
+                d[i][j] = self.sdm[consignee_codes[i - 1]][consignee_codes[j - 1]]
+        if verbose:
+            print "\nSDM for the routing problem:"
+            print d
+
+        if verbose: print "\nClarke-Wright algorithm started..."
 
         def route_of(nd):
             for rt in routes:
@@ -327,44 +346,53 @@ class Net:
             rt = Route(self, [cst])
             routes.append(rt)
         # calculating the wins matrix
-        s = np.array([[0.0 for _ in range(n)] for __ in range(n)]) # wins matrix
-        for i in range(n):
-            for j in range(n):
-                if j <= i - 1:
-                    s[i][j] = d[sender_code][i] + d[sender_code][j] - d[i][j]
+        if verbose: print "\nCalculating the wins matrix..."
+        start_time = time.time()
+        s = np.array([[0.0 for _ in range(m)]
+                      for __ in range(m)]) # wins matrix
+        for i in range(m):
+            for j in range(m):
+                if j < i:
+                    s[i][j] = d[0][i] + d[0][j] - d[i][j]
                 else:
                     s[i][j] = -np.inf
-
+        if verbose:
+            print "\nWins matrix for the routing problem (calculated in {} sec):".format(time.time() - start_time)
+            print s
+            print "\nForming the routes..."
+        start_time = time.time()
+        # start the routes merging
         while True:
             max_s = -np.inf
-            i_max, j_max = sender_code, sender_code
-            for i in range(n):
-                for j in range(n):
+            i_max, j_max = 0, 0
+            for i in range(m):
+                for j in range(m):
                     if s[i][j] > max_s:
                         max_s = s[i][j]
                         i_max, j_max = i, j
             s[i_max][j_max] = -np.inf
-            r1 = route_of(self.nodes[i_max])
-            r2 = route_of(self.nodes[j_max])
+            r1 = route_of(self.nodes[consignee_codes[i_max]])
+            r2 = route_of(self.nodes[consignee_codes[j_max]])
             # conditions to be fulfilled for segments merging
-            if not are_in_same_route(self.nodes[i_max], self.nodes[j_max]) and \
-                is_head_or_tail(self.nodes[i_max]) and \
-                is_head_or_tail(self.nodes[j_max]) and \
+            if not are_in_same_route(self.nodes[consignee_codes[i_max]],
+                                     self.nodes[consignee_codes[j_max]]) and \
+                is_head_or_tail(self.nodes[consignee_codes[i_max]]) and \
+                is_head_or_tail(self.nodes[consignee_codes[j_max]]) and \
                 r1.weight + r2.weight <= capacity:
                 # checking the side before merging
                 if r1.size > 1:
-                    if is_in_tail(self.nodes[i_max], r1):
-                        if r2.size > 1 and is_in_tail(self.nodes[j_max], r2):
+                    if is_in_tail(self.nodes[consignee_codes[i_max]], r1):
+                        if r2.size > 1 and is_in_tail(self.nodes[consignee_codes[j_max]], r2):
                             r2.nodes.reverse()
                         r1.merge(r2)
                         routes.remove(r2)
                     else:
-                        if r2.size > 1 and is_in_head(self.nodes[j_max], r2):
+                        if r2.size > 1 and is_in_head(self.nodes[consignee_codes[j_max]], r2):
                             r2.nodes.reverse()
                         r2.merge(r1)
                         routes.remove(r1)
                 else:
-                    if is_in_tail(self.nodes[j_max], r2):
+                    if is_in_tail(self.nodes[consignee_codes[j_max]], r2):
                         r2.merge(r1)
                         routes.remove(r1)
                     else:
@@ -374,9 +402,11 @@ class Net:
             if max_s == -np.inf:
                 break
         # printing the routes to console
-        print "{} routes were formed.".format(len(routes))
-        for rt in routes:
-            print rt
+        if verbose:
+            print "{} routes were formed in {} sec.".format(len(routes), time.time() - start_time)
+            for rt in routes:
+                print rt
+        # return the list of routes
         return routes
 
     @property
@@ -402,7 +432,6 @@ class Net:
             print
 
     def print_sdm(self):
-        sdm = self.floyd_warshall
         print "SDM\t",
         for nd in self.nodes:
             print nd.code, "\t",
@@ -410,7 +439,7 @@ class Net:
         for i in range(len(self.nodes)):
             print self.nodes[i].code, "\t",
             for j in range(len(self.nodes)):
-                print round(sdm[i][j], 3), "\t",
+                print round(self.sdm[i][j], 3), "\t",
             print
 
     def load_from_file(self, file_name, dlm='\t'):
