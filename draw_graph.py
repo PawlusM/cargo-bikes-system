@@ -1,5 +1,5 @@
 import networkx as nx
-import graphviz
+# import graphviz
 from matplotlib import pyplot as plt
 
 from cbs_net import Net
@@ -39,7 +39,7 @@ for data_line in f:
     if nd.y > max_y: max_y = nd.y
 f.close()
 
-print min_x, max_x, min_y, max_y
+# print min_x, max_x, min_y, max_y
 # normalize coordinates
 for nd in n.nodes:
     nd.x = (nd.x - min_x) / (max_x - min_x)
@@ -74,10 +74,36 @@ ax = fig.add_subplot(1, 1, 1)
 for label in color_map:
     ax.scatter([], [], color=color_map[label], label=label)
 
-nx.draw_networkx_nodes(G, pos=pos, alpha=0.5, node_color=colors, ax=ax)
+nx.draw_networkx_nodes(G, pos=pos,
+                          nodelist=range(730),
+                          alpha=0.6,
+                          node_color=colors, ax=ax, node_size=200)
+
+nx.draw_networkx_nodes(G, pos=pos,
+                          nodelist=range(730),
+                          alpha=0.6,
+                          node_color=colors, ax=ax, node_size=200)
+nx.draw_networkx_nodes(G, pos=pos,
+                          nodelist=range(730, 736),
+                          alpha=1.0,
+                          node_color="orange", ax=ax, node_size=300)
+
+
 nx.draw_networkx_edges(G, pos=pos, style='dotted')
 
+G = nx.relabel_nodes(G, mapping={730: 'A', 731: 'B', 732: 'C',
+                                 733: 'D', 734: 'E', 735: 'F'}, copy=False)
+pos['A'] = pos[730]; pos['B'] = pos[731]; pos['C'] = pos[732]
+pos['D'] = pos[733]; pos['E'] = pos[734]; pos['F'] = pos[735]
+lp_codes = ['A', 'B', 'C', 'D', 'E', 'F']
+loadpoints = {}
+for nd in G.nodes():
+    if nd in lp_codes:
+        loadpoints[nd] = nd
+
+nx.draw_networkx_labels(G, pos, loadpoints, ax=ax)
+
 plt.axis('off')
-plt.legend(loc='lower right')
+plt.legend(loc='lower right', fontsize='large')
 fig.tight_layout()
 plt.show()
