@@ -1,16 +1,16 @@
-import net
-import route
-import stochastic
+from cbs_net import Net
+from cbs_net import Route
+from cbs_net import Stochastic
 
 size = 7
 sender_code = size**2 + 4
-s_weight = stochastic.Stochastic(law=1, location=0.03, scale=0.005)
-s_dist = stochastic.Stochastic(law=0, location=0.05, scale=0.15)
+s_weight = Stochastic(law=1, location=0.03, scale=0.005)
+s_dist = Stochastic(law=0, location=0.05, scale=0.15)
 
 f = open("tw_mid_300_05.txt", "w")
 total_TW = []
 for _ in range(300):
-    n = net.Net()
+    n = Net()
     n.gen_rect(size=size, s_weight=s_dist)
     clients = []
     for nd in n.nodes:
