@@ -2,11 +2,19 @@ import random
 import numpy as np
 import time
 
-from stochastic import Stochastic
-from link import Link
-from node import Node
-from consignment import Consignment
-from route import Route
+from cbs_net.stochastic import Stochastic
+from cbs_net.link import Link
+from cbs_net.node import Node
+from cbs_net.consignment import Consignment
+from cbs_net.route import Route
+
+from satsp import solver as slv  # TSP solver by simulated annealing
+
+# from stochastic import Stochastic
+# from link import Link
+# from node import Node
+# from consignment import Consignment
+# from route import Route
 # from cargobike import CargoBike
 
 
@@ -112,7 +120,7 @@ class Net:
 
     @property
     def to_matrix(self):
-        self.nodes.sort(key=lambda nd: nd.code) # sort the nodes!
+        self.nodes.sort(key=lambda nd: nd.code)  # sort the nodes!
         mtx = np.array([[np.inf for _ in self.nodes] for __ in self.nodes])
         for nd in self.nodes:
             mtx[nd.code][nd.code] = 0
@@ -195,7 +203,7 @@ class Net:
                 cst.origin, cst.destination = sender, nd
                 cst.weight = s_weight.value()
                 self.demand.append(cst)
-        print "Demand generation completed: {} requests generated.".format(len(self.demand))
+        print("Demand generation completed: {} requests generated.".format(len(self.demand)))
 
     def gen_req_flow(self, s_weight=Stochastic(), s_int=Stochastic()):
         t = 0
@@ -210,7 +218,7 @@ class Net:
             while cst.origin is cst.destination:
                 cst.destination = random.choice(self.nodes)
             self.demand.append(cst)
-        print "Demand generation completed: {} requests generated.".format(len(self.demand))
+        print("Demand generation completed: {} requests generated.".format(len(self.demand)))
 
     def dijkstra(self, source):
         # 1 function Dijkstra(Graph, source):
@@ -275,28 +283,30 @@ class Net:
         return path
 
     def clarke_wright(self, sender_code=0, requests=[], capacity=10, verbose=True):
-        routes = [] # the calculated routes
-        n = len(self.nodes) # number of nodes in the net
+        routes = []  # the calculated routes
+        n = len(self.nodes)  # number of nodes in the net
 
         # choose only consignments with sender as origin
-        sender = self.get_node(sender_code) # sernder's node
+        sender = self.get_node(sender_code)  # sernder's node
         from_sender = []
         for cst in requests:
             if cst.origin is sender:
                 from_sender.append(cst)
         # combine multiple consignments for the same destination
-        if verbose: print "Combining multiple consignments..."
+        if verbose:
+            print("Combining multiple consignments...")
         combined_weights = [0 for _ in range(n)]
         for cst in from_sender:
             combined_weights[cst.destination.code] += cst.weight
-        combined = [] # set of consignments combined by consignees
+        combined = []  # set of consignments combined by consignees
         consignee_codes = []
         for i in range(n):
             if combined_weights[i] > 0:
                 combined.append(Consignment(combined_weights[i],
                                             sender, self.get_node(i)))
                 consignee_codes.append(i)
-        if verbose: print sender_code, consignee_codes
+        if verbose:
+            print(sender_code, consignee_codes)
         # number of consignees
         m = len(consignee_codes)
 
@@ -310,46 +320,48 @@ class Net:
             for j in range(1, m + 1):
                 d[i][j] = self.sdm[consignee_codes[i - 1]][consignee_codes[j - 1]]
         if verbose:
-            print "\nSDM for the routing problem:"
-            print d
+            print("\nSDM for the routing problem:")
+            print(d)
 
-        if verbose: print "\nClarke-Wright algorithm started..."
+        if verbose:
+            print("\nClarke-Wright algorithm started...")
 
         def route_of(nd):
-            for rt in routes:
-                if nd in rt.nodes:
-                    return rt
+            for route in routes:
+                if nd in route.nodes:
+                    return route
             return None
 
         def are_in_same_route(nd1, nd2):
-            for rt in routes:
-                if nd1 in rt.nodes and nd2 in rt.nodes:
+            for route in routes:
+                if nd1 in route.nodes and nd2 in route.nodes:
                     return True
             return False
 
-        def is_in_head(nd, rt):
-            if rt is None or nd not in rt.nodes:
+        def is_in_head(nd, route):
+            if route is None or nd not in route.nodes:
                 return False
-            return rt.nodes.index(nd) == 1
+            return route.nodes.index(nd) == 1
 
-        def is_in_tail(nd, rt):
-            if rt is None or nd not in rt.nodes:
+        def is_in_tail(nd, route):
+            if route is None or nd not in route.nodes:
                 return False
-            return rt.nodes.index(nd) == rt.size
+            return route.nodes.index(nd) == route.size
 
         def is_head_or_tail(nd):
-            rt = route_of(nd)
-            return rt is not None and (is_in_head(nd, rt) or is_in_tail(nd, rt))
+            route = route_of(nd)
+            return route is not None and (is_in_head(nd, route) or is_in_tail(nd, route))
 
         # forming the set of simple routes (pendular with empty returns)
         for cst in combined:
-            rt = Route(self, [cst])
-            routes.append(rt)
+            route = Route(self, [cst])
+            routes.append(route)
         # calculating the wins matrix
-        if verbose: print "\nCalculating the wins matrix..."
+        if verbose:
+            print("\nCalculating the wins matrix...")
         start_time = time.time()
         s = np.array([[0.0 for _ in range(m)]
-                      for __ in range(m)]) # wins matrix
+                      for __ in range(m)])  # wins matrix
         for i in range(m):
             for j in range(m):
                 if j < i:
@@ -357,9 +369,9 @@ class Net:
                 else:
                     s[i][j] = -np.inf
         if verbose:
-            print "\nWins matrix for the routing problem (calculated in {} sec):".format(time.time() - start_time)
-            print s
-            print "\nForming the routes..."
+            print("\nWins matrix for the routing problem (calculated in {} sec):".format(time.time() - start_time))
+            print(s)
+            print("\nForming the routes...")
         start_time = time.time()
         # start the routes merging
         while True:
@@ -376,9 +388,9 @@ class Net:
             # conditions to be fulfilled for segments merging
             if not are_in_same_route(self.nodes[consignee_codes[i_max]],
                                      self.nodes[consignee_codes[j_max]]) and \
-                is_head_or_tail(self.nodes[consignee_codes[i_max]]) and \
-                is_head_or_tail(self.nodes[consignee_codes[j_max]]) and \
-                r1.weight + r2.weight <= capacity:
+                    is_head_or_tail(self.nodes[consignee_codes[i_max]]) and \
+                    is_head_or_tail(self.nodes[consignee_codes[j_max]]) and \
+                    r1.weight + r2.weight <= capacity:
                 # checking the side before merging
                 if r1.size > 1:
                     if is_in_tail(self.nodes[consignee_codes[i_max]], r1):
@@ -403,9 +415,69 @@ class Net:
                 break
         # printing the routes to console
         if verbose:
-            print "{} routes were formed in {} sec.".format(len(routes), time.time() - start_time)
+            print("{} routes were formed in {} sec.".format(len(routes), time.time() - start_time))
             for rt in routes:
-                print rt
+                print(rt)
+        # return the list of routes
+        return routes
+
+    @staticmethod
+    def get_batches(self, consignments, batch_size):
+        indices = [idx for idx in range(len(consignments))]
+        batches = []
+        random.shuffle(indices)
+        while len(indices) > 0:
+            batch, total_weight = [], 0
+            while len(indices) > 0 and total_weight < batch_size:
+                idx = indices[0]
+                batch.append(consignments[idx])
+                total_weight += consignments[idx].weight
+                indices.remove(idx)
+            # print([(r.origin.code, r.destination.code) for r in batch])
+            batches.append(batch)
+        return batches
+
+    def annealing(self, sender_code=0, requests=[], capacity=10, verbose=True):
+        routes = []  # the calculated routes
+        n = len(self.nodes)  # number of nodes in the net
+
+        # choose only consignments with sender as origin
+        sender = self.get_node(sender_code)  # sender's node
+        from_sender = []
+        for cst in requests:
+            if cst.origin is sender:
+                from_sender.append(cst)
+        # combine multiple consignments for the same destination
+        if verbose:
+            print("Combining multiple consignments...")
+        combined_weights = [0 for _ in range(n)]
+        for cst in from_sender:
+            combined_weights[cst.destination.code] += cst.weight
+        combined = []  # set of consignments combined by consignees
+        consignee_codes = []
+        for i in range(n):  # consignee codes start from 0
+            if combined_weights[i] > 0:
+                combined.append(Consignment(combined_weights[i],
+                                            sender, self.get_node(i)))
+                consignee_codes.append(i)
+        if verbose:
+            print(sender_code, consignee_codes)
+        # define batches
+        batches = self.get_batches(self, consignments=combined, batch_size=capacity)
+        for batch in batches:
+            nodes = [sender]
+            nodes.extend([cst.destination for cst in batch])
+            if len(batch) > 1:
+                slv.Solve(dist_matrix=[[self.sdm[nd1.code][nd2.code]
+                                        for nd2 in nodes]
+                                       for nd1 in nodes],
+                          screen_output=verbose)
+                routes.append(Route(net=self,
+                                    csts=[batch[idx - 2]
+                                          for idx in slv.GetBestTour()[1:]]))
+            else:
+                routes.append(Route(net=self, csts=batch))
+
         # return the list of routes
         return routes
 
@@ -421,26 +493,26 @@ class Net:
 
     def print_odm(self):
         od = self.od_matrix
-        print "O/D\t",
+        print("O/D", end='\t')
         for nd in self.nodes:
-            print "{0}\t".format(nd.code),
-        print
+            print(nd.code, end='\t')
+        print()
         for origin in self.nodes:
-            print "{0}\t".format(origin.code),
+            print(origin.code, end='\t')
             for destination in self.nodes:
-                print "{0}\t".format(od[(origin.code, destination.code)]),
-            print
+                print(od[(origin.code, destination.code)], end='\t')
+            print()
 
     def print_sdm(self):
-        print "SDM\t",
+        print("SDM", end='\t')
         for nd in self.nodes:
-            print nd.code, "\t",
-        print
+            print(nd.code, end='\t')
+        print()
         for i in range(len(self.nodes)):
-            print self.nodes[i].code, "\t",
+            print(self.nodes[i].code, end='\t')
             for j in range(len(self.nodes)):
-                print round(self.sdm[i][j], 3), "\t",
-            print
+                print(round(self.sdm[i][j], 3), end='\t')
+            print()
 
     def load_from_file(self, file_name, dlm='\t'):
         f = open(file_name, 'r')

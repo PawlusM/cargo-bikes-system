@@ -9,7 +9,7 @@ for data_line in f:
                   'lat': float(data[3]),
                   'description': str(data[1])})
 f.close()
-print nodes
+print(nodes)
 
 json = json.dumps(nodes)
 f = open("nodes.json", "w")

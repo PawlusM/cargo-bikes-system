@@ -1,4 +1,4 @@
-import stochastic
+from cbs_net.stochastic import Stochastic
 
 
 class Node:

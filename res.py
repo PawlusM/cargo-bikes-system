@@ -44,8 +44,8 @@ for i in range(len(tws)):
     m[i], s[i] = stats.norm.fit(tws[i])
     plt.plot(lnspc, stats.norm.pdf(lnspc, m[i], s[i]), label='location ' + files.keys()[i])
 
-plt.legend()
-plt.xlabel('Transport work [tkm]')
-plt.ylabel('Density function [-]')
+plt.legend(fontsize=12)
+plt.xlabel('Total transport work [tkm]', fontsize=12)
+plt.ylabel('Density function [-]', fontsize=12)
 
 plt.show()

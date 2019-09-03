@@ -5,11 +5,10 @@ class Route:
 
     def __init__(self, net=None, csts=[]):
         self.consignments = csts
-        self.net = net # net on which the route is defined
-        self.sdm = np.array([[]]) # shortest distances matrix
+        self.net = net  # net on which the route is defined
+        self.sdm = np.array([[]])  # shortest distances matrix
         if net is not None:
             self.sdm = self.net.sdm
-
 
     def __str__(self):
         ans = "Route["
@@ -22,7 +21,9 @@ class Route:
                 ans += str(n.code) + "--"
             ans += str(self.nodes[-1].code)
         ans += "}" + "({}): {} km, {} tons, {} tkm".format(self.size,
-               round(self.distance, 3), round(self.weight, 3), round(self.transport_work, 3))
+                                                           round(self.distance, 3),
+                                                           round(self.weight, 3),
+                                                           round(self.transport_work, 3))
         return ans
 
     @property
@@ -48,7 +49,7 @@ class Route:
         else:
             d = 0
             for i in range(1, len(self.nodes)):
-                 d += self.sdm[self.nodes[i - 1].code][self.nodes[i].code]
+                d += self.sdm[self.nodes[i - 1].code][self.nodes[i].code]
             return d
 
     @property
@@ -59,8 +60,8 @@ class Route:
             w = 0
             vol = self.weight
             for i in range(1, len(self.nodes) - 1):
-                 w += self.sdm[self.nodes[i - 1].code][self.nodes[i].code] * vol
-                 vol -= self.consignments[i - 1].weight
+                w += self.sdm[self.nodes[i - 1].code][self.nodes[i].code] * vol
+                vol -= self.consignments[i - 1].weight
             return w
 
     @property
