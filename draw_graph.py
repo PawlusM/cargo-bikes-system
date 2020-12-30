@@ -3,6 +3,7 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 from cbs_net import Net
+
 # from cbs_net import Stochastic
 # from cbs_net import Route
 
@@ -61,7 +62,7 @@ color_map = {'restaurant': 'darkblue',
              'bookstore': 'green',
              'loadpoint': 'orange'
              # 'notype': 'white'
-            }
+             }
 colors = [color_map.get(nd.type) for nd in n.nodes]
 # print pos
 
@@ -75,26 +76,29 @@ for label in color_map:
     ax.scatter([], [], color=color_map[label], label=label)
 
 nx.draw_networkx_nodes(G, pos=pos,
-                          nodelist=range(730),
-                          alpha=0.6,
-                          node_color=colors, ax=ax, node_size=200)
+                       nodelist=range(730),
+                       alpha=0.6,
+                       node_color=colors, ax=ax, node_size=200)
 
 nx.draw_networkx_nodes(G, pos=pos,
-                          nodelist=range(730),
-                          alpha=0.6,
-                          node_color=colors, ax=ax, node_size=200)
+                       nodelist=range(730),
+                       alpha=0.6,
+                       node_color=colors, ax=ax, node_size=200)
 nx.draw_networkx_nodes(G, pos=pos,
-                          nodelist=range(730, 736),
-                          alpha=1.0,
-                          node_color="orange", ax=ax, node_size=300)
-
+                       nodelist=range(730, 736),
+                       alpha=1.0,
+                       node_color="orange", ax=ax, node_size=300)
 
 nx.draw_networkx_edges(G, pos=pos, style='dotted')
 
 G = nx.relabel_nodes(G, mapping={730: 'A', 731: 'B', 732: 'C',
                                  733: 'D', 734: 'E', 735: 'F'}, copy=False)
-pos['A'] = pos[730]; pos['B'] = pos[731]; pos['C'] = pos[732]
-pos['D'] = pos[733]; pos['E'] = pos[734]; pos['F'] = pos[735]
+pos['A'] = pos[730]
+pos['B'] = pos[731]
+pos['C'] = pos[732]
+pos['D'] = pos[733]
+pos['E'] = pos[734]
+pos['F'] = pos[735]
 lp_codes = ['A', 'B', 'C', 'D', 'E', 'F']
 loadpoints = {}
 for nd in G.nodes():

@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 class Route:
@@ -10,7 +11,7 @@ class Route:
         if net is not None:
             self.sdm = self.net.sdm
 
-    def __str__(self):
+    def __repr__(self):
         ans = "Route["
         if self.sender is None:
             ans += "None]{"

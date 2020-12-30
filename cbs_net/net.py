@@ -8,14 +8,8 @@ from cbs_net.node import Node
 from cbs_net.consignment import Consignment
 from cbs_net.route import Route
 
-from satsp import solver as slv  # TSP solver by simulated annealing
-
-# from stochastic import Stochastic
-# from link import Link
-# from node import Node
-# from consignment import Consignment
-# from route import Route
-# from cargobike import CargoBike
+# from satsp import solver as slv  # TSP solver by simulated annealing
+from cbs_ga.ga_tsp import GA
 
 
 class Net:
@@ -195,7 +189,7 @@ class Net:
                 self.add_link(out_node.code, in_node.code, s_weight.value(), True)
                 l_num += 1
 
-    def gen_requests(self, sender=None, nodes=[], prob=1, s_weight=Stochastic()):
+    def gen_requests(self, sender=None, nodes=[], prob=1, s_weight=Stochastic(), verbose=True):
         self.demand = []
         for nd in nodes:
             if random.random() < prob:
@@ -203,9 +197,10 @@ class Net:
                 cst.origin, cst.destination = sender, nd
                 cst.weight = s_weight.value()
                 self.demand.append(cst)
-        print("Demand generation completed: {} requests generated.".format(len(self.demand)))
+        if verbose:
+            print("Demand generation completed: {} requests generated.".format(len(self.demand)))
 
-    def gen_req_flow(self, s_weight=Stochastic(), s_int=Stochastic()):
+    def gen_req_flow(self, s_weight=Stochastic(), s_int=Stochastic(), verbose=True):
         t = 0
         self.demand = []
         while t < self.duration:
@@ -218,7 +213,8 @@ class Net:
             while cst.origin is cst.destination:
                 cst.destination = random.choice(self.nodes)
             self.demand.append(cst)
-        print("Demand generation completed: {} requests generated.".format(len(self.demand)))
+        if verbose:
+            print("Demand generation completed: {} requests generated.".format(len(self.demand)))
 
     def dijkstra(self, source):
         # 1 function Dijkstra(Graph, source):
@@ -438,6 +434,51 @@ class Net:
         return batches
 
     def annealing(self, sender_code=0, requests=[], capacity=10, verbose=True):
+        pass
+        # routes = []  # the calculated routes
+        # n = len(self.nodes)  # number of nodes in the net
+        #
+        # # choose only consignments with sender as origin
+        # sender = self.get_node(sender_code)  # sender's node
+        # from_sender = []
+        # for cst in requests:
+        #     if cst.origin is sender:
+        #         from_sender.append(cst)
+        # # combine multiple consignments for the same destination
+        # if verbose:
+        #     print("Combining multiple consignments...")
+        # combined_weights = [0 for _ in range(n)]
+        # for cst in from_sender:
+        #     combined_weights[cst.destination.code] += cst.weight
+        # combined = []  # set of consignments combined by consignees
+        # consignee_codes = []
+        # for i in range(n):  # consignee codes start from 0
+        #     if combined_weights[i] > 0:
+        #         combined.append(Consignment(combined_weights[i],
+        #                                     sender, self.get_node(i)))
+        #         consignee_codes.append(i)
+        # if verbose:
+        #     print(sender_code, consignee_codes)
+        # # define batches
+        # batches = self.get_batches(self, consignments=combined, batch_size=capacity)
+        # for batch in batches:
+        #     nodes = [sender]
+        #     nodes.extend([cst.destination for cst in batch])
+        #     if len(batch) > 1:
+        #         slv.Solve(dist_matrix=[[self.sdm[nd1.code][nd2.code]
+        #                                 for nd2 in nodes]
+        #                                for nd1 in nodes],
+        #                   screen_output=verbose)
+        #         routes.append(Route(net=self,
+        #                             csts=[batch[idx - 2]
+        #                                   for idx in slv.GetBestTour()[1:]]))
+        #     else:
+        #         routes.append(Route(net=self, csts=batch))
+        #
+        # # return the list of routes
+        # return routes
+
+    def genetic(self, sender_code=0, requests=[], capacity=10, verbose=True):
         routes = []  # the calculated routes
         n = len(self.nodes)  # number of nodes in the net
 
@@ -467,16 +508,12 @@ class Net:
         for batch in batches:
             nodes = [sender]
             nodes.extend([cst.destination for cst in batch])
-            if len(batch) > 1:
-                slv.Solve(dist_matrix=[[self.sdm[nd1.code][nd2.code]
-                                        for nd2 in nodes]
-                                       for nd1 in nodes],
-                          screen_output=verbose)
-                routes.append(Route(net=self,
-                                    csts=[batch[idx - 2]
-                                          for idx in slv.GetBestTour()[1:]]))
-            else:
-                routes.append(Route(net=self, csts=batch))
+            winner = GA(mtx=[[self.sdm[nd1.code][nd2.code]
+                              for nd2 in nodes]
+                             for nd1 in nodes]).evolve(verbose=verbose)
+            routes.append(Route(net=self,
+                                csts=[batch[idx - 1]
+                                      for idx in winner.order]))
 
         # return the list of routes
         return routes
@@ -492,27 +529,29 @@ class Net:
         return od
 
     def print_odm(self):
-        od = self.od_matrix
-        print("O/D", end='\t')
-        for nd in self.nodes:
-            print(nd.code, end='\t')
-        print()
-        for origin in self.nodes:
-            print(origin.code, end='\t')
-            for destination in self.nodes:
-                print(od[(origin.code, destination.code)], end='\t')
-            print()
+        pass
+        # od = self.od_matrix
+        # print("O/D", end='\t')
+        # for nd in self.nodes:
+        #     print(nd.code, end='\t')
+        # print()
+        # for origin in self.nodes:
+        #     print(origin.code, end='\t')
+        #     for destination in self.nodes:
+        #         print(od[(origin.code, destination.code)], end='\t')
+        #     print()
 
     def print_sdm(self):
-        print("SDM", end='\t')
-        for nd in self.nodes:
-            print(nd.code, end='\t')
-        print()
-        for i in range(len(self.nodes)):
-            print(self.nodes[i].code, end='\t')
-            for j in range(len(self.nodes)):
-                print(round(self.sdm[i][j], 3), end='\t')
-            print()
+        pass
+        # print("SDM", end='\t')
+        # for nd in self.nodes:
+        #     print(nd.code, end='\t')
+        # print()
+        # for i in range(len(self.nodes)):
+        #     print(self.nodes[i].code, end='\t')
+        #     for j in range(len(self.nodes)):
+        #         print(round(self.sdm[i][j], 3), end='\t')
+        #     print()
 
     def load_from_file(self, file_name, dlm='\t'):
         f = open(file_name, 'r')

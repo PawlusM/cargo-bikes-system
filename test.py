@@ -1,18 +1,16 @@
 from cbs_net.net import Net
 from cbs_net.stochastic import Stochastic
-from cbs_net.route import Route
 import time
 
 sender_code = 731
 s_weight = Stochastic(law=1, location=0.03, scale=0.005)
-# s_dist = Stochastic(law=0, location=0.05, scale=0.15)
-
+# s_dist = Stcd ..stic(law=0, location=0.05, scale=0.15)
 
 n = Net()
 # n.gen_rect(size=size, s_weight=s_dist)
 print("Loading the network...")
 start_time = time.time()
-n.load_from_file('rynek_links.txt')
+n.load_from_file('rynek_links.txt')  # ('test_net.txt')
 print("Network is loaded in", time.time() - start_time, "sec")
 print("Calculating the shortest distances matrix...")
 start_time = time.time()
@@ -45,11 +43,11 @@ f.close()
 '''
 n.gen_requests(sender=n.get_node(sender_code), nodes=clients,
                prob=0.9, s_weight=s_weight)
-rts = n.annealing(sender_code=sender_code, requests=n.demand,
-                  capacity=0.15, verbose=True)
+rts = n.genetic(sender_code=sender_code, requests=n.demand,
+                capacity=0.15, verbose=True)
 tw = 0
 for rt in rts:
     tw += rt.transport_work
     print(rt)
-print("Total transport work:", tw, "tkm\n")
+print("Total transport work:", tw, "tkm")
 

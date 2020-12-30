@@ -3,8 +3,8 @@ import numpy as np
 # import seaborn as sns
 from scipy import stats
 
-files = {'A': 'tw_A_300_01.txt', 'B': 'tw_B_300_01.txt', 'C': 'tw_C_300_01.txt',
-         'D': 'tw_D_300_01.txt', 'E': 'tw_E_300_01.txt', 'F': 'tw_F_300_01.txt'}
+files = {'BASIC': 'tw_A_300_01.txt', 'CLOSEST': 'tw_B_300_01.txt',
+         'OPTIMIZED': 'tw_C_300_01.txt'}
 tws = [[] for _ in files]
 
 # print files
@@ -24,11 +24,6 @@ for i in range(len(tws)):
     print("{:>10}\t{:10.3f}\t{:10.4f}\t{:10d}".format(files.keys()[i],
         tws[i].mean(), tws[i].var(),
         int(np.round(1.64**2 * tws[i].var() / (0.05 * tws[i].mean())**2))))
-
-# tw_diag = np.sort(tw_diag)
-# tw_mid = np.flipud(np.sort(tw_mid))
-# print()
-# print("Location A priority: ", (tw_diag < tw_mid).sum())
 
 #
 for i in range(len(tws)):
