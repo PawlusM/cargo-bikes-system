@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import time
+import csv
 
 from cbs_net.stochastic import Stochastic
 from cbs_net.link import Link
@@ -189,17 +190,17 @@ class Net:
                 self.add_link(out_node.code, in_node.code, s_weight.value(), True)
                 l_num += 1
 
-    def gen_requests(self, sender=None, nodes=[], prob=1, s_weight=Stochastic(), verbose=True):
+    def gen_requests(self, sender=None, nodes=[], probs={}, s_weight=Stochastic(), verbose=True):
         self.demand = []
-        for nd in nodes:
-            if random.random() < prob:
+        for node in nodes:
+            if random.random() < probs[node.type]:
                 cst = Consignment()
-                cst.origin, cst.destination = sender, nd
+                cst.origin, cst.destination = sender, node
                 cst.weight = s_weight.value()
                 self.demand.append(cst)
-        if verbose:
-            print("Demand generation completed: {} requests generated.".format(len(self.demand)))
-
+        if verbose:      
+            print ("Demand generation completed: {} requests generated.".format(len(self.demand)))
+                
     def gen_req_flow(self, s_weight=Stochastic(), s_int=Stochastic(), verbose=True):
         t = 0
         self.demand = []
@@ -434,49 +435,49 @@ class Net:
         return batches
 
     def annealing(self, sender_code=0, requests=[], capacity=10, verbose=True):
-        pass
-        # routes = []  # the calculated routes
-        # n = len(self.nodes)  # number of nodes in the net
-        #
-        # # choose only consignments with sender as origin
-        # sender = self.get_node(sender_code)  # sender's node
-        # from_sender = []
-        # for cst in requests:
-        #     if cst.origin is sender:
-        #         from_sender.append(cst)
-        # # combine multiple consignments for the same destination
-        # if verbose:
-        #     print("Combining multiple consignments...")
-        # combined_weights = [0 for _ in range(n)]
-        # for cst in from_sender:
-        #     combined_weights[cst.destination.code] += cst.weight
-        # combined = []  # set of consignments combined by consignees
-        # consignee_codes = []
-        # for i in range(n):  # consignee codes start from 0
-        #     if combined_weights[i] > 0:
-        #         combined.append(Consignment(combined_weights[i],
-        #                                     sender, self.get_node(i)))
-        #         consignee_codes.append(i)
-        # if verbose:
-        #     print(sender_code, consignee_codes)
-        # # define batches
-        # batches = self.get_batches(self, consignments=combined, batch_size=capacity)
-        # for batch in batches:
-        #     nodes = [sender]
-        #     nodes.extend([cst.destination for cst in batch])
-        #     if len(batch) > 1:
-        #         slv.Solve(dist_matrix=[[self.sdm[nd1.code][nd2.code]
-        #                                 for nd2 in nodes]
-        #                                for nd1 in nodes],
-        #                   screen_output=verbose)
-        #         routes.append(Route(net=self,
-        #                             csts=[batch[idx - 2]
-        #                                   for idx in slv.GetBestTour()[1:]]))
-        #     else:
-        #         routes.append(Route(net=self, csts=batch))
-        #
-        # # return the list of routes
-        # return routes
+        #pass
+        routes = []  # the calculated routes
+        n = len(self.nodes)  # number of nodes in the net
+        
+        # choose only consignments with sender as origin
+        sender = self.get_node(sender_code)  # sender's node
+        from_sender = []
+        for cst in requests:
+            if cst.origin is sender:
+                from_sender.append(cst)
+        # combine multiple consignments for the same destination
+        if verbose:
+            print("Combining multiple consignments...")
+        combined_weights = [0 for _ in range(n)]
+        for cst in from_sender:
+            combined_weights[cst.destination.code] += cst.weight
+        combined = []  # set of consignments combined by consignees
+        consignee_codes = []
+        for i in range(n):  # consignee codes start from 0
+            if combined_weights[i] > 0:
+                combined.append(Consignment(combined_weights[i],
+                                            sender, self.get_node(i)))
+                consignee_codes.append(i)
+        if verbose:
+            print(sender_code, consignee_codes)
+        # define batches
+        batches = self.get_batches(self, consignments=combined, batch_size=capacity)
+        for batch in batches:
+            nodes = [sender]
+            nodes.extend([cst.destination for cst in batch])
+            if len(batch) > 1:
+                slv.Solve(dist_matrix=[[self.sdm[nd1.code][nd2.code]
+                                        for nd2 in nodes]
+                                       for nd1 in nodes],
+                          screen_output=verbose)
+                routes.append(Route(net=self,
+                                    csts=[batch[idx - 2]
+                                          for idx in slv.GetBestTour()[1:]]))
+            else:
+                routes.append(Route(net=self, csts=batch))
+        
+        # return the list of routes
+        return routes
 
     def genetic(self, sender_code=0, requests=[], capacity=10, verbose=True):
         routes = []  # the calculated routes
@@ -553,10 +554,23 @@ class Net:
         #         print(round(self.sdm[i][j], 3), end='\t')
         #     print()
 
-    def load_from_file(self, file_name, dlm='\t'):
-        f = open(file_name, 'r')
+    def load_from_file(self, fnodes='nodes.txt', flinks='links.txt', dlm='\t'):
+        # load nodes
+        f = open(fnodes, 'r', encoding="utf8")
         for data_line in f:
             data = data_line.split(dlm)
-            # print int(data[0]), int(data[1]), float(data[2])
+            node = Node(code=int(data[0]), name=data[1])
+            node.type = data[2].strip()
+            node.x, node.y = float(data[3]), float(data[4])
+            self.nodes.append(node)
+        f.close()
+        self.nodes.sort(key=lambda nd: nd.code)
+        # load links
+        f = open(flinks, 'r')
+        for data_line in f:
+            data = data_line.split(dlm)
             self.add_link(int(data[0]), int(data[1]), float(data[2]))
         f.close()
+        # set iternal variables
+        # self.mtx = self.to_matrix
+        # self.sdm = self.floyd_warshall(nodes)
